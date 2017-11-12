@@ -41,10 +41,9 @@
         (setq rule-fired? (or (run-plan elem top-level-goal context
                                        belief-path) rule-fired?)))))
   (if (not rule-fired?)
-   (yloop 
-    (yfor elem in elems)
-    (ydo (setq elem (absolute->relative elem belief-path))
-        (cond
+   (dolist (elem elems rule-fired?)
+     (setq elem (absolute->relative elem belief-path))
+     (cond
          ((and elem
                (ty$instance? elem 'active-goal)
                (not (ty$instance? elem 'p-goal))
@@ -72,7 +71,6 @@
           (setq rule-fired? (or (run-fact-plan elem top-level-goal
                                               context belief-path)
                                rule-fired?)))))
-    (yresult rule-fired?))
   rule-fired?)))
 
 (defun preservation-goal-subgoal? (goal)
@@ -109,8 +107,8 @@
                  (ordering nil)
                  (any-episode? nil))
         (yfor candidate in candidates)
-        (ydo (yloop (yfor episode in (candidate-episodes candidate))
-                  (ydo (setq sim (ob$similarity goal-obj
+        (ydo (dolist (episode (candidate-episodes candidate))
+                      (setq sim (ob$similarity goal-obj
                                                (ob$pget episode '(goal obj))))
                       (cond
                        ((real? top-level-goal)
@@ -133,7 +131,7 @@
                       ; are sprouted, which will not be interrupted
                       ; by other top-level goals.
                       (if (fl> ordering 0.0)
-                          (setq any-episode? t)))))
+                          (setq any-episode? t))))
     (yresult any-episode?)))
 
 (defun candidates->episodes (candidates)
@@ -158,11 +156,11 @@
    (yfor rule in (collect-planning-rules goal-obj))
    (ydo
     (if (plan? rule)
-        (yloop (yfor bd in (rule-applications goal-obj context rule
-                                            belief-path believe-other?))
-              (ydo (setq candidates
-                       (cons (candidate-create rule bd (episode-retrieve rule))
-                             candidates))))))
+        (dolist (bd (rule-applications goal-obj context rule
+                                       belief-path believe-other?))
+          (setq candidates
+                (cons (candidate-create rule bd (episode-retrieve rule))
+                      candidates)))))
    (yresult candidates)))
 
 (defun collect-planning-rules (goal-obj)
@@ -198,8 +196,8 @@
     (if existing-analogical-ep?
         (progn
      (ndbg-roman-nl *gate-dbg* rule "Try existing analogical plans")
-     (yloop (yfor episode in (ob$gets goal 'analogical-episode))
-           (ydo (setq sprouted-contexts
+     (dolist (episode (ob$gets goal 'analogical-episode))
+                (setq sprouted-contexts
                     (append!
                     ; Ordering is 1.0: There should only be one
                     ; analogical goal at lower levels anyway--I don't know why
@@ -207,7 +205,7 @@
                     (try-analogical-plan goal goal-obj context
                                          episode
                                          belief-path top-level-goal)
-                     sprouted-contexts))))))
+                     sprouted-contexts)))))
     ;
     ; Mutation plans are next highest priority.
     ;
@@ -246,8 +244,8 @@
   ; WILL go through, and so we don't need to have generic plans
   ; take over if no analogical plans fire).
   (if (order-candidates goal-obj candidates top-level-goal)
-      (yloop (yfor episode in (candidates->episodes candidates))
-            (ydo (setq sprouted-contexts
+      (dolist (episode (candidates->episodes candidates))
+                 (setq sprouted-contexts
                      (append!
                      (run-analogical-plan goal goal-obj context
                                      (ob$get episode 'bd)
@@ -257,11 +255,11 @@
                                      (ob$get episode 'ordering)
                                      belief-path top-level-goal
                                      episode t)
-                      sprouted-contexts))))
+                      sprouted-contexts)))
       ; Rules generated automatically from input episodes are not used in
       ; generic planning (but other ones, e.g., from reversal, may be?)
-      (yloop (yfor candidate in candidates)
-            (ydo (if (not (constructed-plan? (candidate-rule candidate)))
+      (dolist (candidate candidates)
+                 (if (not (constructed-plan? (candidate-rule candidate)))
                     (progn
                      (setq sprouted-contexts
                           (append!
@@ -270,7 +268,7 @@
                                              belief-path nil
                                              (candidate-bd candidate)
                                              top-level-goal)
-                           sprouted-contexts)))))))))
+                           sprouted-contexts))))))))
     ;
     ; If still no luck, try believe others.
     ;
@@ -703,8 +701,7 @@
          (progn
           ; Below is moved from before if.
           (setq already-inferred (facts-inferred-by rule ctxt belief-path))
-         (yloop (yfor show-result in show-results)
-               (ydo
+         (dolist (show-result show-results)
                 (ndbg-roman-nl *gate-dbg* inference
                                "Considering show result ~A" show-result)
                 (if (not (already-inferred? show-result ctxt
@@ -714,7 +711,7 @@
                      (setq rule-fired?
                           (or (inference-fire context ctxt top-level-goal
                                               belief-path rule show-result)
-                              rule-fired?))))))))
+                              rule-fired?)))))))
     (ndbg-remove-item rule))))
    (yresult rule-fired?))))
 
@@ -723,9 +720,8 @@
   (ndbg-roman-nl *gate-dbg* inference "Inference fire")
   (let ((assertion nil)
         (fired? nil))
-   (yloop
-    (yfor elem in (ob$gets rule 'goal))
-    (ydo (setq assertion (ob$instan-strength elem (car show-result)))
+   (dolist (elem (ob$gets rule 'goal))
+     (setq assertion (ob$instan-strength elem (car show-result)))
         (if (ty$instance? assertion 'rcode)
             (progn
              (possible-fired-msg fired? rule context show-result
@@ -735,14 +731,13 @@
             (setq fired? (or (inference-assert assertion ctxt top-level-goal
                                               belief-path rule show-result
                                               fired?)
-                            fired?)))))
+                            fired?))))
    ; Too bad we can't do retracts first, so they don't retract assertions.
    ; (But we need the complex fire criteria from above.)
    (if fired?
-       (yloop
-        (yfor elem in (ob$gets rule 'delete))
-        (ydo (inference-retract (ob$instantiate-o elem (car show-result)) ctxt
-                               belief-path))))
+       (dolist (elem (ob$gets rule 'delete))
+         (inference-retract (ob$instantiate-o elem (car show-result)) ctxt
+                            belief-path)))
     fired?))
 
 (defun possible-fired-msg (old-fired? rule context show-result bp)
@@ -783,8 +778,8 @@
         (yfor d-link1 in (get-links ob *dependency-ob* ctxt))
         (ydo 
          (setq dependee (ob$get d-link1 'linked-to))
-         (yloop (yfor d-link2 in (get-links-from dependee *dependency-ob* ctxt))
-               (ydo (cx$retract ctxt d-link2)))
+         (dolist (d-link2 (get-links-from dependee *dependency-ob* ctxt))
+           (cx$retract ctxt d-link2))
          (retract-dependencies dependee ctxt)))
        (cx$retract ctxt ob))
       (progn

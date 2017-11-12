@@ -96,24 +96,24 @@
 (defun interest (key &rest items)
   (let ((found (assq key *ndbg-interests*)))
     (if found
-        (yloop (yfor item in items)
-              (ydo (if (memq? item (cdr found))
+        (dolist (item items)
+                   (if (memq? item (cdr found))
                        (format *gate-output*
                                "Item ~A key ~A already an interest~%"
                                item key)
-                       (setf (cdr found) (cons item (cdr found))))))
+                       (setf (cdr found) (cons item (cdr found)))))
         (setq *ndbg-interests* (cons (cons key items) *ndbg-interests*)))
     (interests)))
 
 (defun disinterest (key &rest items)
   (let ((found (assq key *ndbg-interests*)))
     (if found
-        (yloop (yfor item in items)
-               (ydo (if (not (memq? item (cdr found)))
+        (dolist (item items)
+                    (if (not (memq? item (cdr found)))
                         (format *gate-output*
                                 "Item ~A key ~A not an interest~%"
                                 item key)
-                        (setf (cdr found) (delq! item (cdr found))))))
+                        (setf (cdr found) (delq! item (cdr found)))))
         (format *gate-output* "Key ~A not found at all~%" key))
     (interests)))
 
@@ -124,8 +124,8 @@
   (let ((max-length (+ 2 (apply 'max
                                 (map 'list string-length comments)))))
    (write-dashes-stream max-length stream)
-   (yloop (yfor comment1 in comments)
-         (ydo (dbg stream " ~A~%" comment1)))
+   (dolist (comment1 comments)
+     (dbg stream " ~A~%" comment1))
    (write-dashes-stream max-length stream)))
 
 (defun write-dashes-stream (number stream)

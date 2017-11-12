@@ -359,8 +359,8 @@
    (ob$fcreate '(COMPANIONSHIP))))
 
 (defun need-init (context)
-  (yloop (yfor need in *needs*)
-         (ydo (set-strength need 1.0)))
+  (dolist (need *needs*)
+    (set-strength need 1.0))
   (set-strength (car *needs*) 0.1)
   (set-strength (cadr *needs*) 0.1)
   (if (memq? 'employment1 *gate-load-options*)
@@ -370,8 +370,8 @@
   (if (memq? 'food-need *gate-load-options*)
       (set-strength ^food-need 0.1))
   (no-gen
-   (yloop (yfor need in *needs*)
-          (ydo (cx$assert context need)))))
+   (dolist (need *needs*)
+     (cx$assert context need))))
 
 ;
 ; Non-compilable stuff from dd_mutation
@@ -2454,12 +2454,10 @@
                  context *me-belief-path*)))
     ; E.g., "I feel only slightly embarrassed."
     (if fact-negation
-        (yloop
-         (yfor emotion in (get-result-emotions fact context))
+        (dolist (emotion (get-result-emotions fact context))
          ; Todo: above must be done in *reality*? Will it work?
-         (ydo 
           (generate1 emotion *global-switches* context
-                     *me-belief-path*)))))
+                     *me-belief-path*))))
    (yresult result)))
 
 (defun negate-attitude (fact)

@@ -144,9 +144,7 @@
          (weight (fl/ plausibility (fixnum->flonum num))))
         ; weight assumes either all or none of the ptns
         ; have all or none of the params
-    (yloop
-     (yfor from in froms)
-     (ydo
+    (dolist (from froms)
 ; Old code
 ;      (if (and (ty$instance? (car from) 'not)
 ;               (not (cx$true-relative context (car from) belief-path)))
@@ -176,7 +174,7 @@
                                          nil)
                                      0.0)
                             rule ,rule))
-            belief-path)))
+            belief-path))
     (recalculate-strength to context belief-path)))
 
 (defun add-depend (context from to weight offset decay rule)
@@ -261,8 +259,8 @@
            (ndbg-roman-nl *gate-dbg* depend "New strength = ~A" new-strength)
            (if (ty$instance? ob 'emotion)
                (normalize-emotion ob context)))))))
-  (yloop (yfor dependee in (get-dependees ob context belief-path))
-        (ydo (recalculate-strength dependee context belief-path))))
+  (dolist (dependee (get-dependees ob context belief-path))
+    (recalculate-strength dependee context belief-path)))
 
 (defun normalize-emotion (emot context)
   (if (fl< (strength emot) 0.0)
@@ -366,15 +364,13 @@
               (ndbg-roman-nl *gate-dbg* rule "Input received")
 ;              (generate1 concept *global-switches* context belief-path)
               (setq concepts (append concept concepts))
-              (yloop
-               (yfor con in concept)
-               (ydo 
+              (dolist (con concept)
                 (if (not (ty$instance? con 'object))
                     (progn
                      (ob$set con 'input-state? t)
                      (cx$hyper-assert-relative context con belief-path)
                      (setq *entered-concepts*
-                      (append! *entered-concepts* (list con))))))))))))
+                      (append! *entered-concepts* (list con)))))))))))
    (yresult concepts)))
 
 (setq *empty-string* "")
@@ -723,9 +719,8 @@
        (setq subgoals (cdr subgoals)))))
 
 (defun clear-seq (subgoals)
-  (yloop
-   (yfor subgoal in subgoals)
-   (ydo (ob$removes subgoal 'seq-next))))
+  (dolist (subgoal subgoals)
+    (ob$removes subgoal 'seq-next)))
 
 (defun var-value (var)
   (bd-lookup (variable-name var) *ob-bindings*))
@@ -825,14 +820,13 @@
         show-list
         (yloop (yfor show1 in show-list)
               (initial (result nil))
-              (ydo (yloop
-                   (yfor show2 in (show-all (cdr obs) context
-                                           (car show1) belief-path))
-                   (ydo (setq result (append! result
-                                            (list
+              (ydo (dolist (show2 (show-all (cdr obs) context
+                                            (car show1) belief-path))
+                     (setq result (append! result
+                                           (list
                                              (cons (car show2)
                                                    (append (cdr show1)
-                                                           (cdr show2)))))))))
+                                                           (cdr show2))))))))
               (yresult result)))))
 
 ; Todo: should most likely be relative to belief path, but this is gnarly.

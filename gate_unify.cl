@@ -472,8 +472,8 @@
 ; to these obs are not being deleted?
 ;
 (defun gc-uniquified-obs ()
-  (yloop (yfor ob in *uniquified-obs*)
-        (ydo (ob$destroy ob)))
+  (dolist (ob *uniquified-obs*)
+    (ob$destroy ob))
   (setq *uniquified-obs* nil))
 
 (defun ob$compare1 (source target substit ignore-slots proc)

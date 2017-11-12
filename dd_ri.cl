@@ -57,12 +57,10 @@
 ; Note that this works for personal goals but not for daydreaming goals
 ; since a subgoal has not yet been activated.
 (defun upon-activate-top-level-goal (top-level-goal)
-  (yloop
-   (yfor episode in *recent-episodes*)
-   (ydo 
+  (dolist (episode *recent-episodes*)
     (run-top-level-goal-serendipity top-level-goal 
                                     (inaccessible-planning-rules episode)
-                                    nil))))
+                                    nil)))
 
 ;
 ; Run serendipities for a set of bottom rules and a given bottom goal.
@@ -177,10 +175,9 @@
          (if (any? (lambda (x) (sublist? (car lsts) x elem-accessor))
                    rest)
              rest
-             (yloop (yfor relem in rest)
-                   (ydo (if (sublist? relem (car lsts) elem-accessor)
-                           (setq rest (delq! relem rest))))
-                   (yresult (cons (car lsts) rest))))))))
+             (dolist (relem rest (cons (car lsts) rest))
+               (if (sublist? relem (car lsts) elem-accessor)
+                   (setq rest (delq! relem rest)))))))))
 
 (defun sublist? (lst1 lst2 elem-accessor)
   (yloop
@@ -407,9 +404,7 @@
              (new-forward-path nil))
     (yfor f in (ob$gets bottom-rule 'forward-chain-nums))
     (ydo
-     (yloop
-      (yfor b in (ob$gets top-rule 'backward-chain-nums))
-       (ydo
+     (dolist (b (ob$gets top-rule 'backward-chain-nums))
         (if
          (and (plan? (chain-rule f)) (plan? (chain-rule b))
               (setq f-ep (ri-useable-rule? (chain-rule f) episodes))
@@ -438,7 +433,7 @@
           (setq result
            (append! result (rule-intersection1 (chain-rule b) new-backward-path
                                                (chain-rule f) new-forward-path
-                                               episodes (+ 1 depth)))))))))
+                                               episodes (+ 1 depth))))))))
      (yresult
       (progn
         (ndbg-roman-nl *gate-dbg* ri "Ri1 returns ~A" result)

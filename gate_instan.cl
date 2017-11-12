@@ -216,12 +216,10 @@
                                                      omit-slots include-slots
                                                      substit abstract
                                                      omit-proc))
-                        (yloop
-                         (yfor pair in (ob$pairs result))
-                         (ydo 
+                        (dolist (pair (ob$pairs result))
                           ; Todo: something about type here.
                           (ob$add result-ob (slots-name pair)
-                                  (slots-value pair))))
+                                  (slots-value pair)))
                         (if (ob? result)
                             (ob$destroy result)
                             (error "~A not ob to destroy" result))))))

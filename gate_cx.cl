@@ -108,11 +108,11 @@
       (yloop (initial (result nil)
                       (rest (ob$get self 'all-obs)))
              (yfor context in (cons self (ob$get self 'ancestors)))
-             (ydo (yloop (yfor ob in rest)
-                         (ydo (if (memq? context (ob$gets ob 'top-context))
+             (ydo (dolist (ob rest)
+                              (if (memq? context (ob$gets ob 'top-context))
                                   (progn
                                    (setq result (cons ob result))
-                                   (setq rest (delq! ob rest)))))))
+                                   (setq rest (delq! ob rest))))))
              (yresult result))))
 
 (defun cx$add-child (self child)
@@ -226,16 +226,16 @@
          nil)))
 
 (defun cx$walk (self proc)
-  (yloop (yfor ob in (ob$get self 'all-obs))
-        (ydo (funcall proc ob))))
+  (dolist (ob (ob$get self 'all-obs))
+    (funcall proc ob)))
 
 (defun cx$walk-type (self proc type)
   (if *hashing?*
-      (yloop (yfor ob in (cx$retrieve-hash-type self type))
-            (ydo (funcall proc ob)))
-      (yloop (yfor ob in (ob$get self 'all-obs))
-            (ydo (if (eq? type (ob$ty ob))
-                    (funcall proc ob))))))
+    (dolist (ob (cx$retrieve-hash-type self type))
+      (funcall proc ob))
+    (dolist (ob (ob$get self 'all-obs))
+      (if (eq? type (ob$ty ob))
+        (funcall proc ob)))))
 
 (defun cx$get-all (self)
   (ob$get self 'all-obs))
@@ -446,15 +446,14 @@
            ((eq? top-context self) (setq result t))
            ((memq? top-context (ob$get self 'ancestors))
             (setq found? t) (setq result t)
-            (yloop
-             (yfor context in (cdr
-                              (memq top-context
-                                    (reverse (cons self
-                                                   (ob$get self 'ancestors))))))
-                  (ydo (cond ((memq? ob (ob$get context 'add-obs))
+            (dolist (context (cdr
+                               (memq top-context
+                                     (reverse (cons self
+                                                    (ob$get self 'ancestors))))))
+                       (cond ((memq? ob (ob$get context 'add-obs))
                              (setq result t))
                             ((memq? ob (ob$get context 'remove-obs))
-                             (setq result nil))))))))
+                             (setq result nil)))))))
          (yresult result))
         (progn
          (setq obs (if *hashing?* (cx$retrieve-hash self ob)
@@ -469,69 +468,69 @@
 
 (defun cx$hypothesize (self retracts asserts)
   (let ((new-context (cx$sprout self)))
-    (yloop (yfor assertion in retracts)
-           (ydo (cx$retract new-context assertion)))
-    (yloop (yfor assertion in asserts)
-           (ydo (cx$assert new-context assertion)))
+    (dolist (assertion retracts)
+      (cx$retract new-context assertion))
+    (dolist (assertion asserts)
+      (cx$assert new-context assertion))
     new-context))
 
 (defun cx$generate (self)
   (format *gen-stream* "~%-----~%Contents of ~A:~%" self)
-  (yloop (yfor ob in (cx$sorted-all-obs self))
-         (ydo (generate ob nil self)))
+  (dolist (ob (cx$sorted-all-obs self))
+    (generate ob nil self))
   (format *gen-stream* "~&-----~%"))
 
 (defun cx$print (self)
   (format *gate-output* "~&-----~%Contents of ~A:~%" self)
-  (yloop (yfor ob in (cx$sorted-all-obs self))
-         (ydo (ob$print ob *gate-output*)
-             (newline *gate-output*)))
+  (dolist (ob (cx$sorted-all-obs self))
+    (ob$print ob *gate-output*)
+    (newline *gate-output*))
   (format *gate-output* "-----~%")
   nil)
 
 (defun cx$print-actions (self)
   (format *gate-output* "~&-----~%Contents of ~A:~%" self)
-  (yloop (yfor ob in (cx$sorted-all-obs self))
-         (ydo (if (ty$instance? ob 'action)
-                  (progn
-                   (ob$print ob *gate-output*)
-                   (newline *gate-output*)))))
+  (dolist (ob (cx$sorted-all-obs self))
+    (if (ty$instance? ob 'action)
+      (progn
+        (ob$print ob *gate-output*)
+        (newline *gate-output*))))
   (format *gate-output* "-----~%")
   nil)
 
 (defun cx$print-diffs (self)
   (format *gate-output* "~&-----~%Differential contents of ~A:~%" self)
   (format *gate-output* "~&Additions:~%")
-  (yloop (yfor ob in (ob$get self 'add-obs))
-        (ydo (ob$print ob *gate-output*)
-             (newline *gate-output*)))
+  (dolist (ob (ob$get self 'add-obs))
+    (ob$print ob *gate-output*)
+    (newline *gate-output*))
   (format *gate-output* "~&Removals:~%")
-  (yloop (yfor ob in (ob$get self 'remove-obs))
-        (ydo (ob$print ob *gate-output*)
-             (newline *gate-output*)))
+  (dolist (ob (ob$get self 'remove-obs))
+    (ob$print ob *gate-output*)
+    (newline *gate-output*))
   nil)
 
 (defun cx$print-ancestors (self)
-  (yloop (yfor context in (reverse (cons self (ob$get self 'ancestors))))
-         (ydo (cx$print-diffs context))))
+  (dolist (context (reverse (cons self (ob$get self 'ancestors))))
+    (cx$print-diffs context)))
 
 (defun cx$show-descendants (self)
-  (yloop (yfor ob in (ob$get self 'children))
-         (ydo (cx$show-descendants1 ob))))
+  (dolist (ob (ob$get self 'children))
+    (cx$show-descendants1 ob)))
 
 (defun cx$show-descendants1 (self)
   (ob$unhide self)
-  (yloop (yfor ob in (ob$get self 'children))
-         (ydo (cx$show-descendants1 ob))))
+  (dolist (ob (ob$get self 'children))
+    (cx$show-descendants1 ob)))
 
 (defun cx$unshow-descendants (self)
-  (yloop (yfor ob in (ob$get self 'children))
-         (ydo (cx$unshow-descendants1 ob))))
+  (dolist (ob (ob$get self 'children))
+    (cx$unshow-descendants1 ob)))
 
 (defun cx$unshow-descendants1 (self)
   (ob$hide self)
-  (yloop (yfor ob in (ob$get self 'children))
-         (ydo (cx$unshow-descendants1 ob))))
+  (dolist (ob (ob$get self 'children))
+    (cx$unshow-descendants1 ob)))
 
 ;
 ; Context sensitive links

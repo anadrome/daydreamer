@@ -46,9 +46,8 @@
                  (sprouted-context nil))
         (yuntil (null? (cdr rest)))
         (ydo
-         (yloop
-          (yfor child in (prune-possibilities (cx$children (car rest))))
-          (ydo (if (neq? child (cadr rest))
+         (dolist (child (prune-possibilities (cx$children (car rest))))
+               (if (neq? child (cadr rest))
                   (progn
                    (delay-dbgs 'to-be-set
                     (rule-fire-msg rule "coded plan" context bd nil goal)
@@ -58,7 +57,7 @@
                           context top-level-goal 1.0 t))
                     (setq xxcontext sprouted-context)
                     (setq sprouted-contexts
-                         (cons sprouted-context sprouted-contexts)))))))
+                         (cons sprouted-context sprouted-contexts))))))
          (setq rest (cdr rest))))
        sprouted-contexts))
 
@@ -108,9 +107,8 @@
                                    'termination-context))))
        (ndbg-roman-nl *gate-dbg* rule "Reverse leafs for ~A in ~A top = ~A"
              old-top-level-goal context top-level-goal)
-       (yloop
-        (yfor leaf in leafs)
-        (ydo (if (fl< (strength (ob$get leaf 'obj)) *reverse-leaf-thresh*)
+       (dolist (leaf leafs)
+             (if (fl< (strength (ob$get leaf 'obj)) *reverse-leaf-thresh*)
                 (progn
                  (setq old-context (ob$get leaf 'activation-context))
                  ; Sprout an alternative past context
@@ -130,7 +128,7 @@
                                               sprouted-contexts))
                  ; Retract the leaf objective (so we have to plan for
                  ; it instead of shakily assuming its truth)
-                 (cx$retract sprouted-context (ob$get leaf 'obj))))))
+                 (cx$retract sprouted-context (ob$get leaf 'obj)))))
        sprouted-contexts))
 
 ;
@@ -167,9 +165,7 @@
       (error "Null backwards planning path."))
   (ndbg-roman-nl *gate-dbg* rule "Bckwds plng path = ~A"
                  backwards-planning-path)
-  (yloop
-   (yfor leaf-cause in leaf-causes)
-   (ydo
+  (dolist (leaf-cause leaf-causes)
     (ndbg-roman-nl *gate-dbg* rule "Considering leaf cause ~A" leaf-cause)
     (if (ty$instance? leaf-cause 'not)
      (progn
@@ -184,9 +180,7 @@
        (progn
         ; set up rand object
         (setq rand (ob$fcreate '(RAND)))
-        (yloop
-         (yfor leaf-cause1 in leaf-causes)
-         (ydo
+        (dolist (leaf-cause1 leaf-causes)
           (if (neq? leaf-cause1 leaf-cause)
            (progn
             (setq uor-obj (ob$fcreate '(ROR))) ; was UOR, but gets killed by vblz
@@ -197,7 +191,7 @@
              (progn
               (ob$add uor-obj 'obj predictor)
               (ob$add uor-obj 'obj (ob$fcreate `(ACTIVE-GOAL obj ,predictor)))))
-            (ob$add rand 'obj uor-obj)))))
+            (ob$add rand 'obj uor-obj))))
         ; set up rules
         (setq p-goal-uid
              (string->symbol (string-append "PRESERVATION"
@@ -268,7 +262,7 @@
          (no-gen (cx$assert-many sprouted-context input-states))
          (setq sprouted-contexts (cons sprouted-context
                                       sprouted-contexts)))))))))
-      sprouted-contexts))
+      sprouted-contexts)
 
 (defun cx$input-states (cx)
   (yloop (initial (result nil))
@@ -278,12 +272,12 @@
          (yresult result)))
 
 (defun cx$assert-many (cx obs)
-  (yloop (yfor ob in obs)
-        (ydo (cx$assert cx ob))))
+  (dolist (ob obs)
+    (cx$assert cx ob)))
 
 (defun cx$retract-many (cx obs)
-  (yloop (yfor ob in obs)
-        (ydo (cx$retract cx ob))))
+  (dolist (ob obs)
+    (cx$retract cx ob)))
 
 (defun predicting-state (state)
   (let ((pred (ob$get (ob$ty state) 'predictor)))
@@ -301,14 +295,14 @@
                 (progn
                  (cx$assert to-context ob)
                  (setq deps (get-links ob *dependency-ob* from-context))
-                 (yloop (yfor dep in deps)
-                        (ydo (cx$assert to-context dep)
-                             (cx$assert to-context (ob$get dep 'linked-to))))
+                 (dolist (dep deps)
+                   (cx$assert to-context dep)
+                   (cx$assert to-context (ob$get dep 'linked-to)))
                  (setq deps (get-links-from ob *dependency-ob* from-context))
-                 (yloop (yfor dep in deps)
-                        (ydo (cx$assert to-context dep)
-                             (cx$assert to-context
-                                        (ob$get dep 'linked-from)))))))))
+                 (dolist (dep deps)
+                   (cx$assert to-context dep)
+                   (cx$assert to-context
+                              (ob$get dep 'linked-from))))))))
 
 ; Returns a fresh alternative past context (an alternative of old-context)
 ; which includes only planning structure with which we are concerned
@@ -363,17 +357,17 @@
        ; on things which are shared with the original episode contexts.
        ; Todo: altern would be to have a cx$copy that copies obs and yet
        ; preserves links.
-       (yloop (yfor ob in (cx$get-all sprouted-context))
-             (ydo (if (ty$instance? ob 'goal)
+       (dolist (ob (cx$get-all sprouted-context))
+                  (if (ty$instance? ob 'goal)
                       (progn
                        (setq ob (replace-linked-ob ob sprouted-context
                                  *me-belief-path* *empty-bd*))
-                       (ob$set ob 'top-level-goal new-top-level-goal)))))
+                       (ob$set ob 'top-level-goal new-top-level-goal))))
        ; Also, fix up activation contexts to be here. This isn't
        ; strictly necessary (?) because failure reversal (which uses
        ; that slot so far) will never get run on these trcs...
-       (yloop (yfor ob in (cx$get-all-ty sprouted-context *active-goal-ob*))
-              (ydo (ob$set ob 'activation-context sprouted-context)))
+       (dolist (ob (cx$get-all-ty sprouted-context *active-goal-ob*))
+         (ob$set ob 'activation-context sprouted-context))
        (list sprouted-context old-top-level-goal))))
 
 ;
@@ -397,8 +391,8 @@
                                   top-level-goals)))
                  (progn
                   (setq deps (get-links ob *intends-ob* context))
-                  (yloop (yfor dep in deps)
-                         (ydo (cx$retract context dep)))
+                  (dolist (dep deps)
+                    (cx$retract context dep))
                   (cx$retract context ob))))))
 
 (defun gc-plans1 (context top-level-goals)
@@ -411,8 +405,8 @@
                       (memq? (ob$get ob 'top-level-goal) top-level-goals))
                 (progn
                  (setq deps (get-links ob *intends-ob* context))
-                 (yloop (yfor dep in deps)
-                        (ydo (cx$retract context dep)))
+                 (dolist (dep deps)
+                   (cx$retract context dep))
                  ; Don't clobber the top-level goal itself.
                  (if (not (memq? ob top-level-goals))
                      (cx$retract context ob)))))))
@@ -424,11 +418,11 @@
          (ydo (if (ty$instance? ob 'emotion)
                   (progn
                    (setq deps (get-links ob *dependency-ob* context))
-                   (yloop (yfor dep in deps)
-                          (ydo (cx$retract context dep)))
+                   (dolist (dep deps)
+                     (cx$retract context dep))
                    (setq deps (get-links-from ob *dependency-ob* context))
-                   (yloop (yfor dep in deps)
-                          (ydo (cx$retract context dep)))
+                   (dolist (dep deps)
+                     (cx$retract context dep))
                    (cx$retract context ob))))))
 
 ; End of file.

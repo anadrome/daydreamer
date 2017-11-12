@@ -62,9 +62,8 @@
         (temp nil))
        (ob$set type 'type *ty-ob*)
        (setq *types* (cons type *types*))
-       (yloop
-        (yfor supertype in supertypes)
-        (ydo (ob$add type 'isa supertype)))
+       (dolist (supertype supertypes)
+         (ob$add type 'isa supertype))
        ; Exemplars are used by the DAYDREAMER generator.
        (setq temp (ob$create-empty))
        (ob$add temp 'type type)
@@ -85,8 +84,8 @@
   (ob$set (ob$name->ob type-name) 'major-type? t))
 
 (defun ty$display ()
-  (yloop (yfor type in *types*)
-         (ydo (ob$unhide type))))
+  (dolist (type *types*)
+    (ob$unhide type)))
 
 (defun ty$supertypes (self)
   (ob$gets self 'isa))

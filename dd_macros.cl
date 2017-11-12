@@ -44,8 +44,8 @@
                 (progn
                  (ob$set ep 'plan-threshold *infinite-thresh*)
                  (ob$set ep 'reminding-threshold 1)
-                 (yloop (yfor index in ',indices)
-                        (ydo (if (symbol? index)
+                 (dolist (index ',indices)
+                             (if (symbol? index)
                                  (setq temp (ob$name->ob index))
                                  (setq temp (ob$fcreate index)))
                              (if (null? temp)
@@ -53,7 +53,7 @@
                                   (error "Trouble with defining ~A" index)
                                   (ndbg-roman-nl *gate-dbg* rule "Ignored."))
                                  (progn
-                                  (epmem-store ep temp t t)))))))
+                                  (epmem-store ep temp t t))))))
             (if ,plan-thresh (ob$set ep 'plan-threshold ,plan-thresh))
             (if ,reminding-thresh
                 (ob$set ep 'reminding-threshold ,reminding-thresh))

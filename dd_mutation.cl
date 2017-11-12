@@ -39,11 +39,9 @@
     (if (null? (ob$get leaf 'mutations-tried?))
         (progn
          (ob$set leaf 'mutations-tried? t)
-         (yloop
-          (yfor ob in (cx$get-all-ty leaf *active-goal-ob*))
+         (dolist (ob (cx$get-all-ty leaf *active-goal-ob*))
           ; Note that planning loops do not result in failed goals.
           ; They just leave unplanned active goals.
-          (ydo
            (if (ty$instance? (ob$get ob 'obj) 'action)
                (progn
                 (ndbg-roman-nl *gate-dbg* rule "Mutating action goal ~A" ob)
@@ -53,7 +51,7 @@
                  (yfor mutated-action in mutated-actions)
                  (ydo (if (action-mutation top-level-goal leaf mutated-action
                                            ob)
-                          (setq result t)))))))))))
+                          (setq result t))))))))))
    (yresult result)))
       nil))
 
@@ -221,9 +219,9 @@
                          (result2 nil))
                 (yfor elem1 in lst)
                 (ydo (setq result2 (permute-list (delq elem1 lst)))
-                     (yloop (yfor elem2 in result2)
-                            (ydo (setq result1 (cons (cons elem1 elem2)
-                                               result1)))))
+                     (dolist (elem2 result2)
+                       (setq result1 (cons (cons elem1 elem2)
+                                           result1))))
                 (yresult result1)))))
 
 (defun permutation-mutations (action)
@@ -249,8 +247,8 @@
                   (progn
 ;                  (setq ob1 (ob$copy (tlast result)))
                    (setq ob2 (ob$copy (tlast result)))
-                   (yloop (yfor ob in result)
-                          (ydo (ob$add ob (slots-name sv) (slots-value sv))))
+                   (dolist (ob result)
+                     (ob$add ob (slots-name sv) (slots-value sv)))
 ;                  (ob$add ob1 (slots-name sv) *me*)
                    (ob$add ob2 (slots-name sv) 'some-object)
                    (setq result (cons ob2 result)))
@@ -258,11 +256,11 @@
                    (setq temp (substitution-mutations (slots-value sv)))
                    (yloop (initial (new-result nil))
                           (yfor ob1 in temp)
-                          (ydo (yloop (yfor ob2 in result)
-                                      (ydo (setq ob2 (ob$copy ob2))
+                          (ydo (dolist (ob2 result)
+                                           (setq ob2 (ob$copy ob2))
                                            (ob$add ob2 (slots-name sv) ob1)
                                            (setq new-result (append! new-result
-                                                             (list ob2))))))
+                                                             (list ob2)))))
                           (yresult (setq result new-result))))))
          (yresult result))))
 
@@ -301,9 +299,8 @@
                                        'mutation-plan-contexts))
         (ydo (setq bds (cx$retrieve mutated-plan-context goal-obj))
 ;  was retrieve-all; why, I don't know--retrieve always retrieves all
-             (yloop
-              (yfor bd in bds)
-              (ydo (if (mutation-result? (car bd) mutated-plan-context)
+             (dolist (bd bds)
+                   (if (mutation-result? (car bd) mutated-plan-context)
                        (progn
                         (ndbg-roman *gate-dbg* rule "Mutation plan")
                         (ndbg-roman *gate-dbg* rule " for ~A in ~A"
@@ -322,7 +319,7 @@
                          (inference-chain->plan-trc mutated-plan-context
                                                     sprouted-context (car bd)
                                                     goal bd top-level-goal
-                                                    *active-goal-ob*)))))))
+                                                    *active-goal-ob*))))))
         (yresult sprouted-contexts))))
 
 (defun inference-chain->plan-trc (inf-context plan-context fact goal
@@ -333,8 +330,8 @@
                                      *me-belief-path* nil))
         (dependencies (ol-get fact *dependency-ob* 'backward inf-context))
         (intends nil))
-       (yloop (yfor dependency in dependencies)
-              (ydo (setq intends
+       (dolist (dependency dependencies)
+                   (setq intends
                          (ob$fcreate `(INTENDS linked-from ,root-goal
                                                linked-to
                                                  ,(inference-chain->plan-trc1
@@ -343,7 +340,7 @@
                                                  top-level-goal goal-type)
                                                rule ,(ob$get dependency 'rule)
                                                seq? t)))
-                   (cx$assert plan-context intends)))
+                   (cx$assert plan-context intends))
        root-goal))
 
 (defun inference-chain->plan-trc1 (inf-context plan-context fact
@@ -352,8 +349,8 @@
         (dependencies (ol-get fact *dependency-ob* 'backward inf-context))
         (intends nil))
        (ob$add goal 'type goal-type)
-       (yloop (yfor dependency in dependencies)
-              (ydo (setq intends
+       (dolist (dependency dependencies)
+                   (setq intends
                          (ob$fcreate `(INTENDS linked-from ,goal
                                                linked-to
                                                  ,(inference-chain->plan-trc1
@@ -362,7 +359,7 @@
                                                  top-level-goal goal-type)
                                                rule ,(ob$get dependency 'rule)
                                                seq? t)))
-                   (cx$assert plan-context intends)))
+                   (cx$assert plan-context intends))
        (cx$assert plan-context goal)
        goal))
 

@@ -61,8 +61,8 @@
   (daydreamer-control0))
 
 (defun resume-infs ()
-  (yloop (yfor fact in *needs*)
-        (ydo (cx$touch-fact *reality-lookahead* fact)))
+  (dolist (fact *needs*)
+    (cx$touch-fact *reality-lookahead* fact))
   (run-inferences *reality-lookahead* nil *me-belief-path*)
   (set-state 'performance)
   (daydreamer-control0))
@@ -74,8 +74,8 @@
   (daydreamer-control0))
 
 (defun update-initial (cx)
-  (yloop (yfor f in *initial-facts*)
-         (ydo (cx$assert f cx))))
+  (dolist (f *initial-facts*)
+    (cx$assert f cx)))
 
 (defun new-daydreamer ()
   (setq *first-time-initialize?* t)
@@ -141,8 +141,8 @@
 (defun initialize-primal-reality ()
   (ndbg-roman-nl *gate-dbg* rule "Creating primal reality...")
   (setq *primal-reality* (cx$create))
-  (yloop (yfor assertion in *initial-facts*)
-         (ydo (cx$assert *primal-reality* assertion))))
+  (dolist (assertion *initial-facts*)
+    (cx$assert *primal-reality* assertion)))
 
 ;
 ; Top-level control loop: repeatedly select the most highly motivated
@@ -174,12 +174,12 @@
                         (ndbg-roman-nl *gate-dbg* rule
                          "No more goals to run; switching to performance mode")
                         (setq strikes (+ 1 strikes))
-                        (yloop (yfor goal in *top-level-goals*)
-                              (ydo (if (and (eq? 'waiting (ob$get goal 'status))
+                        (dolist (goal *top-level-goals*)
+                                   (if (and (eq? 'waiting (ob$get goal 'status))
                                            (eq? 'real (ob$get goal
                                                                'planning-type)))
                                       (progn
-                                       (change-tlg-status goal 'runable)))))
+                                       (change-tlg-status goal 'runable))))
                         (set-state 'performance))))))
              ((memq? top-level-goal candidates)
               (setq strikes 0)
@@ -204,9 +204,9 @@
 
 (defun need-decay ()
   (ndbg-roman-nl *gate-dbg* rule-long "Need decay.")
-  (yloop (yfor need in *needs*)
-        (ydo (set-strength need (fl* *need-decay-factor* (strength need)))
-             (cx$touch-fact *reality* need))))
+  (dolist (need *needs*)
+    (set-strength need (fl* *need-decay-factor* (strength need)))
+    (cx$touch-fact *reality* need)))
 
 (setq *emotion-decay-factor* .95)
 
@@ -215,9 +215,7 @@
 ; Only non-motivating emotions are subject to decay.
 (defun emotion-decay ()
   (ndbg-roman-nl *gate-dbg* rule-long "Emotion decay.")
-  (yloop
-   (yfor emot in *emotions*)
-   (ydo
+  (dolist (emot *emotions*)
     (if (not (motivating-emotion? emot))
         (progn
          (set-strength emot (fl* *emotion-decay-factor* (strength emot)))
@@ -226,7 +224,7 @@
              (progn
               (ndbg-roman-nl *gate-dbg* rule "Emotion ~A below threshold." emot)
               (cx$retract *reality* emot)
-              (emotion-delete emot))))))))
+              (emotion-delete emot)))))))
 
 (defun emotion-delete (emot)
   (setq *emotions* (delq! emot *emotions*))
@@ -275,15 +273,14 @@
 ;
 
 (defun print-tasks ()
-  (yloop
-   (yfor c in *top-level-goals*)
-   (ydo (ndbg-roman-nl *gate-dbg* task "~A concern ~A motiv ~A status ~A"
+  (dolist (c *top-level-goals*)
+    (ndbg-roman-nl *gate-dbg* task "~A concern ~A motiv ~A status ~A"
                        (if (eq? 'imaginary (ob$get c 'planning-type))
                            "Daydreaming goal"
                            "Personal goal")
                        (tlg->string c)
                        (strength c)
-                       (ob$get c 'status)))))
+                       (ob$get c 'status))))
 
 ;
 ; Control algorithm for a particular top-level-goal:
@@ -421,13 +418,12 @@
   (ndbg-roman-nl *gate-dbg* rule "Removing motivating emotions of ~A in ~A"
                         goal context)
   (let ((dependencies (get-dependencies goal context *me-belief-path*)))
-       (yloop (yfor dependency in dependencies)
-              (ydo 
+       (dolist (dependency dependencies)
                (if (ty$instance? (ob$get dependency 'linked-from) 'emotion)
                    (progn
                     (cx$retract context dependency)
                     (remove-if-free (ob$get dependency 'linked-from)
-                                    context)))))))
+                                    context))))))
 
 (defun remove-if-free (emotion context)
   (let ((dependees (get-dependees emotion context *me-belief-path*))
@@ -671,8 +667,8 @@
        (if (null? (ob$get rule 'initial-status))
            (ob$add goal 'status 'runable)
            (ob$add goal 'status (ob$get rule 'initial-status)))
-       (yloop (yfor emotion in emotions)
-              (ydo (if (var? emotion)
+       (dolist (emotion emotions)
+                   (if (var? emotion)
                        (setq main-motiv
                         (setq emotion (ob$instantiate emotion bd)))
                        (setq any-emot
@@ -682,7 +678,7 @@
                    (if (or (eq? emotion main-motiv)
                            (fl< (strength emotion) *genable-emot-thresh*))
                        (no-gen (cx$assert context emotion))
-                       (cx$assert context emotion))))
+                       (cx$assert context emotion)))
        ; should really batch strength recalculations above
        (if (null? main-motiv)
            (setq main-motiv any-emot))

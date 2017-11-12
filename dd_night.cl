@@ -283,9 +283,8 @@
      (initial (result nil))
      (yfor rest-cross in (cross-product (cdr lst)))
      (ydo
-      (yloop
-       (yfor elem in (car lst))
-       (ydo (setq result (cons (cons elem rest-cross) result)))))
+      (dolist (elem (car lst))
+        (setq result (cons (cons elem rest-cross) result))))
      (yresult result)))))
 
 ;*******************************************************************************
@@ -293,14 +292,12 @@
 ;*******************************************************************************
 
 (defun qplans-es-print (qplans-es)
-  (yloop
-   (yfor qplans in qplans-es)
-   (ydo (qplans-print qplans))))
+  (dolist (qplans qplans-es)
+    (qplans-print qplans)))
 
 (defun qplans-print (qplans)
-  (yloop
-   (yfor qplan in qplans)
-   (ydo (qplan-print qplan))))
+  (dolist (qplan qplans)
+    (qplan-print qplan)))
 
 (defun qplan-print (qplan)
   (let ((rules (car qplan))
@@ -315,9 +312,8 @@
    (else
     (print-spaces *gate-dbg* indent)
     (ndbg-roman-nl *gate-dbg* night "~A" (car qqplan))
-    (yloop
-     (yfor subqqplan in (cdr qqplan))
-     (ydo (qqplan-print subqqplan (+ 1 indent)))))))
+    (dolist (subqqplan (cdr qqplan))
+      (qqplan-print subqqplan (+ 1 indent))))))
 
 ;*******************************************************************************
 ; Qplan generation:
@@ -328,14 +324,12 @@
 ;*******************************************************************************
 
 (defun qplans-es-gen (qplans-es topgoal english)
-  (yloop
-   (yfor qplans in qplans-es)
-   (ydo (qplans-gen qplans topgoal english))))
+  (dolist (qplans qplans-es)
+    (qplans-gen qplans topgoal english)))
 
 (defun qplans-gen (qplans topgoal english)
-  (yloop
-   (yfor qplan in qplans)
-   (ydo (qplan-gen qplan topgoal english))))
+  (dolist (qplan qplans)
+    (qplan-gen qplan topgoal english)))
 
 (defun qplan-gen (qplan topgoal english)
   (let ((rules (car qplan))

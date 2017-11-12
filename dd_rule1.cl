@@ -110,9 +110,8 @@
    (yuntil (or (null? com)
               (eq? (car com) 'then)))
    (ydo
-    (yloop
-     (yfor word in (break-into-words (car com)))
-     (ydo (if (or (> len *if-then-length*)
+    (dolist (word (break-into-words (car com)))
+          (if (or (> len *if-then-length*)
                  (string-equal? last-word "and"))
              (progn
               (if *typeset?*
@@ -133,8 +132,8 @@
            (setq len (+ len 4)))
           (else
            (format stream "~A " word)
-           (setq len (+ 1 len (string-length word)))))))
-     (setq com (cdr com)))
+           (setq len (+ 1 len (string-length word))))))
+    (setq com (cdr com)))
    (yresult com)))
 
 (defun break-into-words (string)
@@ -190,8 +189,8 @@
   t)
 
 (defun rule-destroy-chaining (rule)
-  (yloop (yfor r in (ob$gets rule 'forward-chain))
-        (ydo (remove-chaining rule r))))
+  (dolist (r (ob$gets rule 'forward-chain))
+    (remove-chaining rule r)))
 
 ; If modified, change add-rule-print.
 (defun add-rule (rule)
@@ -257,9 +256,9 @@
 
 ; Compile a new rule into the chaining graph.
 (defun rule-create-chaining (rule1)
-  (yloop (yfor rule2 in *rules*)
-        (ydo (rule-create-chaining1 rule1 rule2)
-            (rule-create-chaining1 rule2 rule1))))
+  (dolist (rule2 *rules*)
+    (rule-create-chaining1 rule1 rule2)
+    (rule-create-chaining1 rule2 rule1)))
 
 ; An alternative tack would be to create two separate graphs: one
 ; for plans and one for inferences. But note that plans often function
@@ -291,8 +290,7 @@
      t)
     (progn
      (ob$set rule2 'number-of-subgoals (length rule2-subgoals))
-     (yloop (yfor rule1-goal in rule1-goals)
-      (ydo
+     (dolist (rule1-goal rule1-goals)
        (yloop
         (initial (i 0))
         (yfor rule2-subgoal in rule2-subgoals)
@@ -317,7 +315,7 @@
 ;                (po rule2-subgoal)))
          ))
          (setq i (+ i 1)))))
-       (yresult t))))))
+       (yresult t)))))
 
 ; Returns 'RNOT if RNOT is embedded within.
 ; Also, a pattern having DEPENDENCY is treated as if it were an RNOT
@@ -358,12 +356,12 @@
 (defun remove-chaining (from-rule to-rule)
   (ob$remove from-rule 'forward-chain to-rule)
   (ob$remove to-rule 'backward-chain from-rule)
-  (yloop (yfor pair in (ob$gets from-rule 'forward-chain-nums))
-        (ydo (if (eq? to-rule (car pair))
-                (ob$remove from-rule 'forward-chain-nums pair))))
-  (yloop (yfor pair in (ob$gets to-rule 'backward-chain-nums))
-        (ydo (if (eq? from-rule (car pair))
-                (ob$remove to-rule 'backward-chain-nums pair)))))
+  (dolist (pair (ob$gets from-rule 'forward-chain-nums))
+    (if (eq? to-rule (car pair))
+      (ob$remove from-rule 'forward-chain-nums pair)))
+  (dolist (pair (ob$gets to-rule 'backward-chain-nums))
+    (if (eq? from-rule (car pair))
+      (ob$remove to-rule 'backward-chain-nums pair))))
 
 ;  (ob$set from-rule 'forward-chain-nums
 ;           (del! (lambda (x y) (eq? x (car y)))
@@ -700,15 +698,11 @@
 (defun clear-subgoals (goal context belief-path)
   (ndbg-roman-nl *gate-dbg* rule-xtra
                  "Clearing subgoals of ~A in ~A" goal context)
-  (yloop
-   (yfor subgoal in (goal-subgoals-uo goal context belief-path))
-   (ydo
+  (dolist (subgoal (goal-subgoals-uo goal context belief-path))
     (clear-subgoals subgoal context belief-path)
-    (cx$retract-relative context subgoal belief-path)))
-  (yloop
-   (yfor intends in (goal-intends-links-uo goal context belief-path))
-   (ydo
-    (cx$retract-relative context intends belief-path))))
+    (cx$retract-relative context subgoal belief-path))
+  (dolist (intends (goal-intends-links-uo goal context belief-path))
+    (cx$retract-relative context intends belief-path)))
 
 (defun fake-inference-deletes (subgoal-objs rule ctxt belief-path)
   (let ((bd *empty-bd*)
@@ -717,16 +711,15 @@
            (progn
             (ndbg-roman-nl *gate-dbg* rule
                            "FAKE INFERENCE ~A ~A" rule ctxt)
-            (yloop (yfor rule-subgoal-obj in (ob$gets rule 'subgoal))
-                  (yfor subgoal-obj in subgoal-objs)
-                  (ydo (setq bd (ob$unify rule-subgoal-obj subgoal-obj bd))))
+            (dolist (rule-subgoal-obj (ob$gets rule 'subgoal))
+              (dolist (subgoal-obj subgoal-objs)
+                (setq bd (ob$unify rule-subgoal-obj subgoal-obj bd))))
             (if (null? bd)
                 (error "null bd in fake-inference-deletes")
                 (setq bd *empty-bd*))
-            (yloop
-             (yfor elem in deletes)
-             (ydo (cx$retract-relative ctxt (ob$instantiate-o elem bd)
-                                      belief-path)))))))
+            (dolist (elem deletes)
+              (cx$retract-relative ctxt (ob$instantiate-o elem bd)
+                                   belief-path))))))
 
 (defun or-inf (a b)
   (if (or a b)
@@ -812,12 +805,12 @@
 (defun next-in-seq (goal context belief-path)
   (ndbg-roman-nl *gate-dbg* rule-xtra "Go to next in RSEQ from ~A in ~A"
                  goal context)
-  (yloop (yfor seq-next in (ob$gets goal 'seq-next))
-        (ydo (if (cx$true-relative context seq-next belief-path)
+  (dolist (seq-next (ob$gets goal 'seq-next))
+             (if (cx$true-relative context seq-next belief-path)
                 (progn
                  (ob$remove goal 'seq-next seq-next)
                  (if (ty$instance? seq-next 'succeeded-goal)
-                     (next-in-seq seq-next context belief-path)))))))
+                     (next-in-seq seq-next context belief-path))))))
 
 (defun make-goal-success (active-goal context dependency belief-path bd)
  (let ((top-level-goal (ob$get active-goal 'top-level-goal)))
@@ -890,9 +883,7 @@
                      active-goal context bd top-level-goal)
  (no-gen
   (if (not (empty-bd? bd))
-       (yloop
-        (yfor elem in (cx$get-all context))
-        (ydo
+       (dolist (elem (cx$get-all context))
          (setq elem (absolute->relative elem belief-path))
          (if (and elem ; (neq? elem top-level-goal) 
                   (ty$instance? elem 'goal)
@@ -902,7 +893,7 @@
                   ) ; end and
              (if (eq? elem top-level-goal)
                  (replace-obj elem bd)
-                 (replace-linked-ob elem context belief-path bd))))))
+                 (replace-linked-ob elem context belief-path bd)))))
   (if (neq? active-goal top-level-goal)
       (progn
             (ndbg-roman-nl *gate-dbg* rule-xtra
@@ -1008,43 +999,43 @@
         (link nil))
     (cx$retract-relative context ob belief-path)
     (cx$assert-relative context ob-copy belief-path)
-    (yloop (yfor from-link in from-links)
-          (ydo (if (cx$true-relative context from-link belief-path)
-                  (progn
-                   (setq link (ob$copy-omit from-link '(top-context)))
-                   (ob$set link 'linked-from ob-copy)
-                   (cx$retract-relative context from-link belief-path)
-                   (cx$assert-relative context link belief-path)))))
-    (yloop (yfor to-link in to-links)
-          (ydo (if (cx$true-relative context to-link belief-path)
-                   (progn
-                    (setq link (ob$copy-omit to-link '(top-context)))
-                    (ob$set link 'linked-to ob-copy)
-                    (cx$retract-relative context to-link belief-path)
-                    (cx$assert-relative context link belief-path)))))
-    (yloop (yfor seq-next in seq-nexts)
-          (ydo (if (cx$true-relative context seq-next belief-path)
-                  (ob$add ob-copy 'seq-next seq-next))))
-    (yloop (yfor seq-next-of in seq-next-ofs)
-          (ydo (if (cx$true-relative context seq-next-of belief-path)
-                  (ob$add ob-copy 'seq-next-of seq-next-of))))
-       (if episode
-           (progn
-            (ob$set ob-copy 'episode episode)
-            (if (ty$instance? ob-copy 'goal)
-                (ob$set episode 'goal ob-copy))))
-       (if plan-rule
-           (ob$set (ob$get ob-copy 'obj) 'plan-rule plan-rule))
-       (if plan-subgoalnum
-           (ob$set (ob$get ob-copy 'obj) 'plan-subgoalnum plan-subgoalnum))
-       (if obj-strength
-           (set-strength (ob$get ob-copy 'obj) obj-strength))
-       (yloop
-        (initial (slot-values preserve-values))
-        (yfor slot-name in *preserve-link-slots*)
-        (ydo
-         (if (car slot-values) (ob$set ob-copy slot-name (car slot-values)))
-         (setq slot-values (cdr slot-values))))
+    (dolist (from-link from-links)
+      (if (cx$true-relative context from-link belief-path)
+        (progn
+          (setq link (ob$copy-omit from-link '(top-context)))
+          (ob$set link 'linked-from ob-copy)
+          (cx$retract-relative context from-link belief-path)
+          (cx$assert-relative context link belief-path))))
+    (dolist (to-link to-links)
+      (if (cx$true-relative context to-link belief-path)
+        (progn
+          (setq link (ob$copy-omit to-link '(top-context)))
+          (ob$set link 'linked-to ob-copy)
+          (cx$retract-relative context to-link belief-path)
+          (cx$assert-relative context link belief-path))))
+    (dolist (seq-next seq-nexts)
+      (if (cx$true-relative context seq-next belief-path)
+        (ob$add ob-copy 'seq-next seq-next)))
+    (dolist (seq-next-of seq-next-ofs)
+      (if (cx$true-relative context seq-next-of belief-path)
+        (ob$add ob-copy 'seq-next-of seq-next-of)))
+    (if episode
+      (progn
+        (ob$set ob-copy 'episode episode)
+        (if (ty$instance? ob-copy 'goal)
+          (ob$set episode 'goal ob-copy))))
+    (if plan-rule
+      (ob$set (ob$get ob-copy 'obj) 'plan-rule plan-rule))
+    (if plan-subgoalnum
+      (ob$set (ob$get ob-copy 'obj) 'plan-subgoalnum plan-subgoalnum))
+    (if obj-strength
+      (set-strength (ob$get ob-copy 'obj) obj-strength))
+    (yloop
+      (initial (slot-values preserve-values))
+      (yfor slot-name in *preserve-link-slots*)
+      (ydo
+        (if (car slot-values) (ob$set ob-copy slot-name (car slot-values)))
+        (setq slot-values (cdr slot-values))))
     ob-copy))
 
 (defun replace-obj (goal bd)

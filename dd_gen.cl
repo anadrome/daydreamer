@@ -380,9 +380,9 @@
               (if (null? (cdr rest))
                   (gs-string-write stream ", and by")
                   (gs-string-write stream ", by")))))
-                (yloop (yfor subgoal in subgoals)
-                      (ydo (gen-subgoals subgoal stream switches context
-                                        bp nil)))))))
+                (dolist (subgoal subgoals)
+                           (gen-subgoals subgoal stream switches context
+                                        bp nil))))))
 
 (define-gen RPROX nil
   (let ((subject (people-or-orgs (ob$gets con 'actor))))
@@ -469,10 +469,10 @@
 (define-gen EMOTION nil
   (let ((subject (generate-emotion con stream switches context bp t t))
         (neg-total 0.0) (pos-total 0.0))
-       (yloop (yfor emot in *emotions*)
-             (ydo (if (ty$instance? emot 'neg-emotion)
+       (dolist (emot *emotions*)
+                  (if (ty$instance? emot 'neg-emotion)
                      (setq neg-total (fl+ neg-total (strength emot)))
-                     (setq pos-total (fl+ pos-total (strength emot))))))
+                     (setq pos-total (fl+ pos-total (strength emot)))))
        (setq *overall-emotional-state* (fl- pos-total neg-total))
        (if *as-well-as?*
            (yloop

@@ -80,8 +80,8 @@
   (if (obr-node self)
       (error "Sure enough, node of ~A isn't nil!" self))
   (ob$remove-all self)
-  (yloop (yfor obname in (obr-obnames self))
-        (ydo (ob$remove-name self obname)))
+  (dolist (obname (obr-obnames self))
+    (ob$remove-name self obname))
   (setq *obs* (delq! self *obs*)))
 
 ;
@@ -384,9 +384,8 @@
     (initial (result (ob$create-empty)))
     (yfor ob in obs)
     (ydo
-     (yloop
-      (yfor sv in (ob$pairs ob))
-      (ydo (ob$add1 result (slots-name sv) (slots-value sv)))))
+     (dolist (sv (ob$pairs ob))
+       (ob$add1 result (slots-name sv) (slots-value sv))))
    (yresult result)))
 
 (defun ob$concatenate! (&rest obs)
@@ -394,9 +393,8 @@
     (initial (result (car obs)))
     (yfor ob in (cdr obs))
     (ydo
-     (yloop
-      (yfor sv in (ob$pairs ob))
-      (ydo (ob$add1 result (slots-name sv) (slots-value sv)))))
+      (dolist (sv (ob$pairs ob))
+        (ob$add1 result (slots-name sv) (slots-value sv))))
    (yresult result)))
 
 ;

@@ -111,8 +111,8 @@
 ;(setq *epmem-marks* nil)
 
 (defun mark-unmark-all ()
-  (yloop (yfor mark in *epmem-marks*)
-         (ydo (ob$removes mark 'marks)))
+  (dolist (mark *epmem-marks*)
+    (ob$removes mark 'marks))
 ; later change to replace slot value to 0 for
 ; less garbage.
   (setq *epmem-marks* nil))
@@ -132,19 +132,18 @@
   (ndbg-roman-nl *gate-dbg* rule-xtra "Find potential episodes for ~A" rule)
   (let ((new (epmem-retrieve1 (list rule) nil 'plan-threshold))
         (result nil))
-       (yloop (yfor ep in (ob$gets rule 'indexes))
-              (ydo (if (or (memq? ep new)
-                           (recent-episode? ep))
-                       (setq result (cons ep result)))))
-       (if result (ndbg-roman-nl *gate-dbg* rule-xtra
-                                 "Potential episodes = ~A" result))
-       result))
+    (dolist (ep (ob$gets rule 'indexes))
+      (if (or (memq? ep new)
+              (recent-episode? ep))
+        (setq result (cons ep result))))
+    (if result (ndbg-roman-nl *gate-dbg* rule-xtra
+                              "Potential episodes = ~A" result))
+    result))
 
 (defun epmem-retrieve (indices serendipity? threshold-type)
   (let ((eps (epmem-retrieve1 indices serendipity? threshold-type)))
-       (yloop
-        (yfor ep in eps)
-        (ydo (epmem-reminding ep nil nil)))
+       (dolist (ep eps)
+         (epmem-reminding ep nil nil))
        eps))
 
 ; If serendipity? is T, then one less the normal threshold (kind specified
@@ -160,9 +159,8 @@
    (yfor index in indices)
    (ydo
     (if (setq index (index-intern index 'old))
-        (yloop
-         (yfor episode in (ob$gets index 'indexes))
-         (ydo (if (not (recent-episode? episode))
+        (dolist (episode (ob$gets index 'indexes))
+              (if (not (recent-episode? episode))
                  (progn
                   (setq marks (mark-mark episode))
                   (ndbg-roman-nl *gate-dbg* remind "~A marks on ~A"
@@ -180,7 +178,7 @@
                         (ndbg-roman-nl *gate-dbg* remind
                                        "Overdetermined epmem-retrieve ~A"
                                        episode)
-                        (setq result (cons episode result)))))))))))
+                        (setq result (cons episode result))))))))))
     (yresult (progn
             (mark-unmark-all)
             (if result (ndbg-roman-nl *gate-dbg* remind
@@ -268,11 +266,10 @@
        (setq *recent-episodes* (append! *recent-episodes* episodes))
        (setq temp (run-serendipities))
        (setq *recent-episodes* old-recent-episodes)
-       (if temp (yloop (yfor episode in episodes) ; was (cdr temp)
-                       (ydo
+       (if temp (dolist (episode episodes) ; was (cdr temp)
                         (if (any? (lambda (d) (memq? d (cdr temp)))
                                   (ob$get episode 'descendants))
-                            (epmem-reminding episode t nil)))))
+                            (epmem-reminding episode t nil))))
        temp))
 
 ;
@@ -284,9 +281,9 @@
 (setq *recent-ep-max-length* 4)
 
 (defun add-recent (episode)
-  (yloop (yfor ep in *recent-episodes*)
-         (ydo (if (memq? ep (ob$get episode 'descendants))
-                  (setq *recent-episodes* (delq! ep *recent-episodes*)))))
+  (dolist (ep *recent-episodes*)
+    (if (memq? ep (ob$get episode 'descendants))
+      (setq *recent-episodes* (delq! ep *recent-episodes*))))
   (if (>= (length *recent-episodes*) *recent-ep-max-length*)
       (progn
        (ndbg-roman-nl *gate-dbg* rule "Episode ~A fades"
@@ -323,8 +320,7 @@
   ;   to threshold requirements) from any two episodes having
   ;   the same index.
   ;
-  (yloop (yfor index in (ob$gets episode 'indexed-under))
-         (ydo 
+  (dolist (index (ob$gets episode 'indexed-under))
           (if (ty$instance? index 'emotion)
               (if (not new-stored-ep?)
                   (progn
@@ -332,7 +328,7 @@
                    (ndbg-roman-nl *gate-dbg* rule "Reactivate emotion")
                    (add-emotion (ob$get episode 'goal)
                                 index (ob$get episode 'realism) *reality*)))
-              (add-recent-index index))))
+              (add-recent-index index)))
   ;
   ; Run serendipities unless told not to.
   ; Note: inacc. planning rules can be plans OR inferences!
@@ -422,8 +418,8 @@
                                   #'*episodic-rule-name-genproc*))
             (if (not (nil? plan-no-gen))
                 (ob$set rule 'plan-no-gen plan-no-gen))
-            (yloop (yfor i in intends)
-                   (ydo (ob$add i 'rule rule))))
+            (dolist (i intends)
+              (ob$add i 'rule rule)))
 ;           (check-episodic-plan rule (ob$get goal 'obj) subgoals)
        )
        (ob$set goal '(obj strength) realism)
@@ -542,8 +538,8 @@
             ; In below, indices are needed neither for plan nor for
             ; reminding. But wouldn't we like to make it require, say,
             ; half the misc indices for a reminding?
-            (yloop (yfor index in (find-misc-indices context top-level-goal))
-                   (ydo (epmem-store ep index nil nil)))
+            (dolist (index (find-misc-indices context top-level-goal))
+              (epmem-store ep index nil nil))
             ; Do housekeeping for a recent episode (but without the
             ; reminding hoopla; also no serendipities since those
             ; are run whenever a new rule is induced).
@@ -600,8 +596,8 @@
         (if subgoals
             (progn
              (setq rule (goal-subgoals-rule goal context *me-belief-path*))
-             (yloop (yfor subgoal in subgoals)
-                    (ydo (episode-store1 subgoal context nil)))
+             (dolist (subgoal subgoals)
+               (episode-store1 subgoal context nil))
              (setq ep (make-and-store-episode rule goal context
                                              (strength (ob$get goal 'obj))
                                              desirability nil
@@ -873,7 +869,7 @@
       (format stream ") ~A]" (ob->string (ob$get goal 'episode)))
       (format stream ")]"))
   (do-newline stream)
-  (yloop (yfor subgoal in (goal-subgoals goal context *me-belief-path*))
-         (ydo (plan-print1 subgoal context stream (+ 1 level)))))
+  (dolist (subgoal (goal-subgoals goal context *me-belief-path*))
+    (plan-print1 subgoal context stream (+ 1 level))))
 
 ; End of file.
